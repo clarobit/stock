@@ -1,0 +1,200 @@
+<!-- static/index.html -->
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="utf-8" />
+  <title>📈 Stock Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      margin: 24px
+    }
+
+    h1 {
+      margin-bottom: 12px
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 16px
+    }
+
+    input,
+    select,
+    button {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px
+    }
+
+    a.button,
+    button {
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: inline-block
+    }
+
+    a.button:hover,
+    button:hover {
+      background: #f5f5f5
+    }
+
+    .muted {
+      color: #777;
+      font-size: 12px;
+      margin-left: 6px
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 1000px
+    }
+
+    th,
+    td {
+      border: 1px solid #eee;
+      padding: 8px;
+      text-align: left
+    }
+
+    th {
+      background: #fafafa
+    }
+
+    .section {
+      margin-top: 18px
+    }
+  </style>
+</head>
+
+<body>
+  <h1>📊 Stock Dashboard</h1>
+
+  <div class="controls">
+    <label>티커:
+      <input type="text" id="ticker" placeholder="AAPL, MSFT, 005930.KS" />
+    </label>
+    <button id="btnPrice">가격 확인</button>
+
+    <label>지역:
+      <select id="regionSelect"></select>
+    </label>
+    <button id="btnRegionNav">지역 페이지로 이동</button>
+
+    <!-- 링크로 실제 이동 -->
+    <a href="/prices" id="linkAll" class="button">전체 조회</a>
+    <span class="muted" id="updatedAt"></span>
+  </div>
+
+  <div id="result"></div>
+
+  <script>
+    const $ = s => document.querySelector(s);
+    const result = $('#result');
+    const updatedAt = $('#updatedAt');
+    const regionSelect = $('#regionSelect');
+
+    function renderRegion(region, items) {
+      return `
+        <div class="section">
+          <h3>${region.toUpperCase()}</h3>
+          <table>
+            <tr><th>Name</th><th>Ticker</th><th>Price</th></tr>
+            ${items.map(it =>
+        `<tr>
+                <td>${it.name ?? '-'}</td>
+                <td>${it.ticker}</td>
+                <td>${it.error ? '-' : it.price}</td>
+              </tr>`).join('')}
+          </table>
+        </div>`;
+    }
+    function renderAll(data) {
+      result.innerHTML = Object.entries(data).map(([r, items]) => renderRegion(r, items)).join('');
+      updatedAt.textContent = `Updated: ${new Date().toLocaleString()}`;
+    }
+    function renderSingle(item) {
+      result.innerHTML = `
+        <div class="section">
+          <h3>단일 종목</h3>
+          <table>
+            <tr><th>Name</th><th>Ticker</th><th>Price</th></tr>
+            <tr>
+              <td>${item.name ?? '-'}</td>
+              <td>${item.ticker}</td>
+              <td>${item.error ? '-' : item.price}</td>
+            </tr>
+          </table>
+        </div>`;
+      updatedAt.textContent = `Updated: ${new Date().toLocaleString()}`;
+    }
+
+    async function apiAll() { return fetch('/api/prices').then(r => r.json()); }
+    async function apiRegion(r) { return fetch(`/api/prices/${r}`).then(r => r.json()); }
+    async function apiPrice(t) { return fetch(`/api/price/${t}`).then(r => r.json()); }
+
+    async function fillRegions() {
+      const data = await apiAll();
+      regionSelect.innerHTML = '';
+      Object.keys(data).forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r.toUpperCase();
+        regionSelect.appendChild(opt);
+      });
+    }
+
+    $('#btnPrice').addEventListener('click', async () => {
+      const t = $('#ticker').value.trim();
+      if (!t) { alert('티커를 입력하세요'); return; }
+      const data = await apiPrice(t);
+      renderSingle(data);
+    });
+
+    // 지역 페이지로 이동 (쿼리 사용)
+    $('#btnRegionNav').addEventListener('click', () => {
+      const r = regionSelect.value;
+      if (!r) { alert('지역을 선택하세요'); return; }
+      location.href = `/prices?region=${encodeURIComponent(r)}`;
+    });
+
+    (async function init() {
+      await fillRegions();
+
+      const path = location.pathname.replace(/\/+$/, '');
+      const params = new URLSearchParams(location.search);
+      const region = params.get('region');
+
+      // /prices 진입: region 있으면 해당 지역만, 없으면 전체
+      if (path === '/prices') {
+        if (region) {
+          const data = await apiRegion(region);
+          result.innerHTML = renderRegion(data.region, data.results ?? []);
+          updatedAt.textContent = `Updated: ${new Date().toLocaleString()}`;
+        } else {
+          const data = await apiAll();
+          renderAll(data);
+        }
+      }
+      // / (루트)는 기존처럼: 필요 시 사용자가 버튼/링크로 조회
+    })();
+    // 티커 입력창에서 Enter 키 입력 시 검색 실행
+    $('#ticker').addEventListener('keyup', async (e) => {
+      if (e.key === 'Enter') {
+        const t = $('#ticker').value.trim();
+        if (!t) { alert('티커를 입력하세요'); return; }
+        const data = await apiPrice(t);
+        renderSingle(data);
+      }
+    });
+
+  </script>
+</body>
+
+</html>

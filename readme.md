@@ -34,3 +34,8 @@ http://localhost:8000/prices/kr
 http://localhost:8000/prices
 ```
 </details>
+
+
+# 08/28
+1. html 파일 추가
+2. html을 통해 페이지 이동 가능
