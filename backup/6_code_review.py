@@ -62,9 +62,13 @@ def page_catch(page: str):
 # ---------- API (/api/...) ----------
 # url에서 api는 백엔드용으로 구분하기 위해 사용
 # ex) /api/price/{ticker} : 특정 종목 현재가 조회
+class Alert(BaseModel):
+    ticker: str
+    operator: str
+    target: float
 
 
-@app.get("/api/price/{ticker}")  # 특정 종목 주식 조회
+@app.get("/api/price/{ticker}")
 def api_get_price(ticker: str):
     tk = yf.Ticker(ticker)
     hist = tk.history(period="1d", interval="1m")
@@ -87,7 +91,7 @@ def api_get_price(ticker: str):
     }
 
 
-@app.get("/api/prices/{region}") # 특정 지역 전체 종목 조회
+@app.get("/api/prices/{region}")
 def api_get_prices_by_region(region: str):
     stocks = load_stocks()
     if region not in stocks:
@@ -112,7 +116,7 @@ def api_get_prices_by_region(region: str):
     return {"region": region, "results": results}
 
 
-@app.get("/api/prices") # 전체 지역 전체 종목 조회
+@app.get("/api/prices")
 def api_get_prices_all():
     stocks = load_stocks()
     all_results = {}

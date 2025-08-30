@@ -2,6 +2,7 @@
 <!doctype html>
 <html lang="ko">
 
+<!-- 헤더부분 -->
 <head>
   <meta charset="utf-8" />
   <title>📈 Stock Dashboard</title>
@@ -76,9 +77,11 @@
   </style>
 </head>
 
+<!-- 바디부분 -->
 <body>
   <h1>📊 Stock Dashboard</h1>
 
+  <!-- 상단의 contorl 바 = 검색하는 부분 -->
   <div class="controls">
     <label>티커:
       <input type="text" id="ticker" placeholder="AAPL, MSFT, 005930.KS" />
@@ -95,6 +98,7 @@
     <span class="muted" id="updatedAt"></span>
   </div>
 
+  <!-- 하단의 result = 결과 나오는 부분 -->
   <div id="result"></div>
 
   <!-- 이 부분이 js코드 -->
